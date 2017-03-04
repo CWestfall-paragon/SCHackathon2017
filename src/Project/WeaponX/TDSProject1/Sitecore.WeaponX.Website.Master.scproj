@@ -41,6 +41,16 @@
     <OutputPath>.\bin\Release\</OutputPath>
     <RecursiveDeployAction>Ignore</RecursiveDeployAction>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'cburts' ">
+    <DebugSymbols>false</DebugSymbols>
+    <RecursiveDeployAction>Ignore</RecursiveDeployAction>
+    <OutputPath>.\bin\cburts\</OutputPath>
+    <InstallSitecoreConnector>True</InstallSitecoreConnector>
+    <DisableFileDeployment>False</DisableFileDeployment>
+    <SitecoreWebUrl>http://weaponx</SitecoreWebUrl>
+    <SitecoreDeployFolder>C:\inetpub\wwwroot\weaponx\Website</SitecoreDeployFolder>
+    <SitecoreAccessGuid>42ae5530-eedc-497a-a93c-5936d5c3898f</SitecoreAccessGuid>
+  </PropertyGroup>
   <ItemGroup>
     <AssemblyAttributes Include="AssemblyFileVersion">
       <Value>$(AssemblyFileVersion)</Value>
