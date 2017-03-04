@@ -207,20 +207,12 @@ namespace Feature.WeaponX.Tasks
                         }
                         catch (Exception ex)
                         {
-                            //_taskResults.LogActivity(new TaskResultsActivity()
-                            //{
-                            //    Message = "Error while creating the New Item: " + ex.ToString(),
-                            //    Code = MessageCode.Error
-                            //});
+                            Sitecore.Diagnostics.Log.Error("Error while creating the New Item: " + BlogName + ": " + ex.Message, "RssFeedImport");
                         }
                     }
                 }
             }
-            catch (Exception ex)
-            {
-
-                Sitecore.Diagnostics.Log.Error("Error while creating the New Item: " + BlogName + ": " + ex.Message, "RssFeedImport");
-            }
+            
 
             if (blog != null)
                 PublishSaveItem(blog, monthFolder, false);
