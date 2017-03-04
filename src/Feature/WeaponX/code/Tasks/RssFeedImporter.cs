@@ -5,6 +5,7 @@ using System.Net;
 using System.Xml;
 using Foundation.Models.Models.sitecore.templates.WeaponX;
 using Foundation.Models.Models.sitecore.templates.WeaponX.Folders;
+using Glass.Mapper;
 using Glass.Mapper.Sc;
 using Glass.Mapper.Sc.Configuration.Attributes;
 using Sitecore;
@@ -23,20 +24,27 @@ namespace Feature.WeaponX.Tasks
         private RSSFeedSettings Feedsettings { get; set; }
 
         public string SyncDatabase { get; set; }
+        public string BlogFeedLocId { get; set; }
 
         public void Run()
         {
             //get setttings
-            Feedsettings = BlogImportHelper.RssFeedSettings();
+            // Feedsettings = BlogImportHelper.RssFeedSettings();
+            var masterDb = Database.GetDatabase("master");
+            // var context = new SitecoreContext(masterDb);
 
-            if (Feedsettings == null)
-            {
-                return;
-            }
-            else
-            {
-                SyncDatabase = Feedsettings.SyncDatabase;
-            }
+            var item = masterDb.GetItem("/sitecore/system/Modules/RSSFeedSettings");
+            SyncDatabase = item.Fields["SyncDatabase"].Value;
+            //Not working
+            BlogFeedLocId = item.Fields["Blog Root Location"].ID.ToString();
+            //if (Feedsettings == null)
+            //{
+            //    return;
+            //}
+            //else
+            //{
+            //    SyncDatabase = Feedsettings.SyncDatabase;
+            //}
 
             //create month folder may not need this
             CreateFolderForMonth();
@@ -331,7 +339,7 @@ namespace Feature.WeaponX.Tasks
             var year = DateTime.Now.Year.ToString();
             var month = DateTime.Now.Month.ToString("00");
 
-            var rootItemId = new ID(Feedsettings.BlogLocation.TargetId.ToString());
+            var rootItemId = new ID(BlogFeedLocId);
             var masterDb = Database.GetDatabase("master");
             var parentPubItem = masterDb.GetItem(rootItemId);
 
@@ -353,14 +361,21 @@ namespace Feature.WeaponX.Tasks
                 }
             }
 
-            public static RSSFeedSettings RssFeedSettings()
-            {
-                var masterDb = Database.GetDatabase("master");
-                var context = new SitecoreContext(masterDb);
-                var rssFeedSettings = new RSSFeedSettings();
-                rssFeedSettings = context.GetItem<RSSFeedSettings>("/sitecore/system/Modules/RSSFeedSettings");
-                return rssFeedSettings;
-            }
+            //public static RSSFeedSettings RssFeedSettings()
+            //{
+            //    var masterDb = Database.GetDatabase("master");
+            //   // var context = new SitecoreContext(masterDb);
+                
+            //    var rssFeedSettings = new RSSFeedSettings();
+            //    var item = masterDb.GetItem("/sitecore/system/Modules/RSSFeedSettings");
+            //    SyncDatabase = item.Fields["SyncDatabase"].Value;
+            //    //if (item.TemplateID == IRSSFeedSettingsConstants.TemplateId)
+            //    //{
+            //    //    rssFeedSettings = item.CastTo<RSSFeedSettings>();
+            //    //}
+            //    //rssFeedSettings = masterDb.GetItem("/sitecore/system/Modules/RSSFeedSettings").CastTo<RSSFeedSettings>();  //context.GetItem<RSSFeedSettings>("/sitecore/system/Modules/RSSFeedSettings");
+            //    return rssFeedSettings;
+            //}
 
         }
 
@@ -382,19 +397,20 @@ namespace Feature.WeaponX.Tasks
 
         }
 
-        public class RunExport : Command
-        {
-            public override void Execute(CommandContext context)
-            {
-                var runblogimport = new RssFeedImporter();
-                runblogimport.Run();
-            }
-
-        }
+       
         public class RssFeedItems
         {
             [SitecoreQuery("/sitecore/system/Modules/*[@@templateid='47EC005D-F89F-4695-8EFA-35585CBF244D']", IsRelative = true)]
             public virtual IEnumerable<RSSFeedConfiguration> RssFeeds { get; set; }
         }
+    }
+    public class RunExport : Command
+    {
+        public override void Execute(CommandContext context)
+        {
+            var runblogimport = new RssFeedImporter();
+            runblogimport.Run();
+        }
+
     }
 }

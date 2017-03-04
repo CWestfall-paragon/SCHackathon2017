@@ -101,6 +101,7 @@
     </SitecoreItem>
     <SitecoreItem Include="sitecore\system\Modules\Blog Feeds\TestRSSFeed.item">
       <ItemDeployment>AlwaysUpdate</ItemDeployment>
+      <ChildItemSynchronization>NoChildSynchronization</ChildItemSynchronization>
     </SitecoreItem>
     <SitecoreItem Include="sitecore\system\Modules\RSSFeedSettings.item">
       <ItemDeployment>AlwaysUpdate</ItemDeployment>
