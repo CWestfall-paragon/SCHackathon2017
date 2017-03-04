@@ -1,17 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Xml;
 using Foundation.Models.Models.sitecore.templates.WeaponX;
 using Foundation.Models.Models.sitecore.templates.WeaponX.Folders;
-using Glass.Mapper;
-using Glass.Mapper.Sc;
-using Glass.Mapper.Sc.Configuration.Attributes;
 using Sitecore;
 using Sitecore.Data;
 using Sitecore.Data.Items;
-using Sitecore.SecurityModel;
 using Sitecore.Shell.Framework.Commands;
 using Terradue.ServiceModel.Syndication;
 
@@ -30,34 +25,25 @@ namespace Feature.WeaponX.Tasks
         public void Run()
         {
             //get setttings
-            // Feedsettings = BlogImportHelper.RssFeedSettings();
             var masterDb = Database.GetDatabase("master");
-            // var context = new SitecoreContext(masterDb);
 
             var item = masterDb.GetItem("/sitecore/system/Modules/RSSFeedSettings");
             SyncDatabase = item.Fields["SyncDatabase"].Value;
-            //Not working
+
             Sitecore.Data.Fields.LinkField linkField = item.Fields["BlogLocation"];
 
             BlogFeedLocId = linkField.TargetID.ToString();
-            //if (Feedsettings == null)
-            //{
-            //    return;
-            //}
-            //else
-            //{
-            //    SyncDatabase = Feedsettings.SyncDatabase;
-            //}
+            if (string.IsNullOrEmpty(BlogFeedLocId))
+            {
+                return;
+            }
 
-            //create month folder may not need this
+            //create current month folder may not need this
             CreateFolderForMonth();
 
             var masterDB = Database.GetDatabase("master");
-            //SitecoreContext repository = new SitecoreContext(masterDB);
 
             Item[] feeditems = masterDB.SelectItems("/sitecore/system/modules//*[@@templatename='RSSFeedConfiguration']");
-
-            var feedlist = new RssFeedItems();
 
             if (feeditems.Any())
             {
@@ -96,6 +82,7 @@ namespace Feature.WeaponX.Tasks
             }
         }
 
+        //syndication feed retrieval. uses a third party dll
         private SyndicationFeed RetrieveFeed(string url)
         {
             WebRequest request = WebRequest.Create(url);
@@ -109,6 +96,7 @@ namespace Feature.WeaponX.Tasks
             return feed;
         }
 
+        //Read the Feed and put it in a model
         private void ProcessDocuments(SyndicationFeed documents)
         {
             string message = string.Format("Found {0} Documents within the " + BlogName + " Feed",
@@ -120,15 +108,9 @@ namespace Feature.WeaponX.Tasks
             foreach (var doc in documents.Items)
             {
 
-                string title = doc.Title.Text;
-                //id is the url of the blog
-                //var publicationfound = GetPublication(doc.Id);
-
-                //  bool ismatch = publicationfound != null && publicationfound.BlogId != "";
 
                 bool ismatch = false;
-                // if (!ismatch)
-                // {
+
                 bool blogfound = BlogExistsNoIndex(doc.Id);
                 ismatch = blogfound == true;
                 // }
@@ -150,6 +132,7 @@ namespace Feature.WeaponX.Tasks
             }
         }
 
+        //Save the Feed to Sitecore
         private void ProcessNewBlogItem(IBlogItem doc)
         {
             string message = string.Format("Creating New Item [docId:{0}] - \"{1}\"", doc.Id, doc.BlogTitle);
@@ -158,8 +141,6 @@ namespace Feature.WeaponX.Tasks
 
             IBlogItem blog = null;
 
-            //Guid folderTemplateId =
-            //    Feedsettings.BlogLocation.TargetId;
             var masterDb = Database.GetDatabase("master");
             var item = masterDb.GetItem("/sitecore/system/Modules/RSSFeedSettings");
             Sitecore.Data.Fields.LinkField linkField = item.Fields["BlogLocation"];
@@ -179,7 +160,7 @@ namespace Feature.WeaponX.Tasks
             var year = rsspubdate.Year;
             var month = rsspubdate.Month;
 
-            var rootItemId = new ID(new Guid("{D032F66D-DC04-43B9-B782-311FDC17A9AC}"));
+            var rootItemId = new ID(new Guid(BlogFeedLocId));
             var parentPubItem = masterDb.GetItem(rootItemId);
 
             var yearFolder = BlogImportHelper.EnsureChildFolder(parentPubItem, year.ToString(), folderTemplateId);
@@ -187,7 +168,8 @@ namespace Feature.WeaponX.Tasks
             var monthFolder = BlogImportHelper.EnsureChildFolder(yearFolder, month.ToString("00"), folderTemplateId);
             using (new Sitecore.SecurityModel.SecurityDisabler())
             {
-                var blogItem = monthFolder.Add("test chris", new TemplateID(IBlogItemConstants.TemplateId));
+                var itemname = ItemUtil.ProposeValidItemName(doc.BlogTitle);
+                var blogItem = monthFolder.Add(itemname, new TemplateID(IBlogItemConstants.TemplateId));
                 var db = Sitecore.Configuration.Factory.GetDatabase("master");
                 if (db != null)
                 {
@@ -213,127 +195,6 @@ namespace Feature.WeaponX.Tasks
                 }
             }
             
-
-            if (blog != null)
-                PublishSaveItem(blog, monthFolder, false);
-        }
-        private void PublishSaveItem(IBlogItem blogItem, Item foldertoplace = null, bool isUpdate = false)
-        {
-            //Not sure why had this before, but we may not have to do the same thing.
-            //var publication = new ImportedPublication()
-            //{
-            //    __Name = ItemUtil.ProposeValidItemName(pubCoverage.Title),
-            //    __DisplayName = pubCoverage.Title,
-            //    PostedRssDateAndTime = pubCoverage.PostedRssDateAndTime,
-            //    Date = pubCoverage.PostedRssDateAndTime,
-            //    Title = pubCoverage.Title,
-            //    Abstract = pubCoverage.Abstract,
-            //    SourceUrl = pubCoverage.SourceUrl,
-            //    BlogId = pubCoverage.BlogId,
-            //    PublicationTypes = pubCoverage.PublicationTypes,
-            //    RelatedServices = pubCoverage.RelatedServices,
-            //    BlogSource = pubCoverage.BlogSource,
-            //    Source = pubCoverage.Source
-            //};
-
-            var db = Sitecore.Configuration.Factory.GetDatabase("master");
-
-            var service = new SitecoreService(db);
-            using (new Sitecore.SecurityModel.SecurityDisabler())
-            {
-                //_taskResults.LogActivity(new TaskResultsActivity()
-                //{
-                //    Message = "Saving Changes",
-                //    Code = MessageCode.Debug
-                //});
-
-                //if (isUpdate)
-                //{
-                //    service.Save(pubCoverage);
-                //    //QueryHelper.UpdateItemInIndex(publication.ToItem());
-                //    // service.Create(foldertoplace, pubCoverage);
-                //}
-                //else
-                //{
-                //service.Create<ImportedPublication, PublicationFolderGlass>(service.Cast<PublicationFolderGlass>(foldertoplace), publication);
-                service.Create<IBlogItem, Blog_Folder>(service.Cast<Blog_Folder>(foldertoplace), blogItem);
-                //QueryHelper.AddItemToIndex(publication.ToItem());
-                // }
-                //service.Save(pubCoverage);
-
-                // pubCoverage.Save();
-
-                //publish publication
-                //CreateAuthorList(publication);
-
-                Item scItem = blogItem.ToItem();
-                scItem.Editing.BeginEdit();
-
-                //Set workflow
-                try
-                {
-                    //TODO put workflows in model
-                    //scItem.Fields["__Workflow state"].Value = "{42E5512D-A8CC-4991-B6D1-94D3A453AC84}";
-                    //OneNorth.Sitecore7.Client.Model.SitecoreSystem.Workflows.PublishItemwithAggregatesOnly.ItemIds.Publish.ToString();
-                    //scItem.Fields["__Workflow state"].Value = OneNorth.Sitecore7.Client.Model.SitecoreSystem.Workflows.PublishItemwithSubItems.Publish.PublishConstants.Id;
-                    //Looks like with Sitecore 8.1 it will not publish with workflow attached.
-                    //scItem.Fields["__Workflow state"].Value = "";
-                    //scItem.Fields["AuthorInfo"].Value = InsightHelper.GetAuthorListSubExpressItem(publication);
-                    scItem.Fields["Name"].Value = blogItem.BlogTitle;
-                }
-                finally
-                {
-                    scItem.Editing.EndEdit();
-                }
-
-                scItem.Editing.BeginEdit();
-                try
-                {
-                    if (foldertoplace != null)
-                    {
-                        scItem.MoveTo(foldertoplace);
-                    }
-                }
-                finally
-                {
-                    scItem.Editing.EndEdit();
-                }
-
-                PublishItem(scItem);
-            }
-        }
-
-        private void PublishItem(Sitecore.Data.Items.Item item)
-        {
-            // The publishOptions determine the source and target database,
-            // the publish mode and language, and the publish date
-            var publishingTargetItems = Sitecore.Publishing.PublishManager.GetPublishingTargets(_db);
-            foreach (var publishingTarget in publishingTargetItems)
-            {
-                SecurityDisabler securitydisabler = new SecurityDisabler();
-                var useDatabaseName = publishingTarget["Target Database"];
-                var webDatabase = Database.GetDatabase(useDatabaseName);
-
-                Sitecore.Publishing.PublishOptions publishOptions =
-                    new Sitecore.Publishing.PublishOptions(item.Database,
-                        Database.GetDatabase(useDatabaseName),
-                        Sitecore.Publishing.PublishMode.Full,
-                        item.Language,
-                        System.DateTime.Now); // Create a publisher with the publishoptions
-                Sitecore.Publishing.Publisher publisher = new Sitecore.Publishing.Publisher(publishOptions);
-
-                // Choose where to publish from
-                publisher.Options.RootItem = item;
-
-                // Publish children as well?
-                publisher.Options.Deep = true;
-
-                // Do the publish!
-                publisher.Publish();
-                SecurityEnabler securityenabler = new SecurityEnabler();
-                //var indexauthors = typeof (Website.Logic.ComputedFields.AttachedFiltersComputedField);
-
-            }
         }
 
         private void CreateFolderForMonth()
@@ -364,30 +225,12 @@ namespace Feature.WeaponX.Tasks
                            parent.Add(name, new TemplateID(new ID(folderTemplateId)));
                 }
             }
-
-            //public static RSSFeedSettings RssFeedSettings()
-            //{
-            //    var masterDb = Database.GetDatabase("master");
-            //   // var context = new SitecoreContext(masterDb);
-
-            //    var rssFeedSettings = new RSSFeedSettings();
-            //    var item = masterDb.GetItem("/sitecore/system/Modules/RSSFeedSettings");
-            //    SyncDatabase = item.Fields["SyncDatabase"].Value;
-            //    //if (item.TemplateID == IRSSFeedSettingsConstants.TemplateId)
-            //    //{
-            //    //    rssFeedSettings = item.CastTo<RSSFeedSettings>();
-            //    //}
-            //    //rssFeedSettings = masterDb.GetItem("/sitecore/system/Modules/RSSFeedSettings").CastTo<RSSFeedSettings>();  //context.GetItem<RSSFeedSettings>("/sitecore/system/Modules/RSSFeedSettings");
-            //    return rssFeedSettings;
-            //}
-
         }
 
         public bool BlogExistsNoIndex(string blogid)
         {
             var db = Sitecore.Configuration.Factory.GetDatabase(SyncDatabase);
-            //do this differently?
-            string query = "/sitecore/content/Home/Blogs//*[@BlogId = '" + blogid + "']";
+            string query = "/sitecore/content/Blogs//*[@BlogID = '" + blogid + "']";
             Item[] blogItem = db.SelectItems(query);
 
             if (blogItem.Any())
@@ -398,17 +241,9 @@ namespace Feature.WeaponX.Tasks
             {
                 return false;
             }
-
-        }
-
-
-        public class RssFeedItems
-        {
-            //[SitecoreQuery("/sitecore/system/Modules//*[@@templateid='47EC005D-F89F-4695-8EFA-35585CBF244D']", IsRelative = true)]
-            [SitecoreQuery("/sitecore/system/modules//*[@@templatename='RSSFeedConfiguration']", IsRelative = true)]
-            public virtual IEnumerable<RSSFeedConfiguration> RssFeeds { get; set; }
         }
     }
+    //Command to run this. Can be used with powershell, button, scheduled task
     public class RunExport : Command
     {
         public override void Execute(CommandContext context)
