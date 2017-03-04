@@ -207,6 +207,7 @@ namespace Feature.WeaponX.Tasks
 
         private void PublishSaveItem(IBlogItem blogItem, Item foldertoplace = null, bool isUpdate = false)
         {
+            //Not sure why had this before, but we may not have to do the same thing.
             //var publication = new ImportedPublication()
             //{
             //    __Name = ItemUtil.ProposeValidItemName(pubCoverage.Title),
