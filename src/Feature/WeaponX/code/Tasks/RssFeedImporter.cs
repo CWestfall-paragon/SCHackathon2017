@@ -25,6 +25,7 @@ namespace Feature.WeaponX.Tasks
 
         public string SyncDatabase { get; set; }
         public string BlogFeedLocId { get; set; }
+        public string BlogName { get; set; }
 
         public void Run()
         {
@@ -56,7 +57,6 @@ namespace Feature.WeaponX.Tasks
 
             Item[] feeditems = masterDB.SelectItems("/sitecore/system/modules//*[@@templatename='RSSFeedConfiguration']");
 
-
             var feedlist = new RssFeedItems();
 
             if (feeditems.Any())
@@ -65,27 +65,20 @@ namespace Feature.WeaponX.Tasks
                 {
                     SyndicationFeed feed = null;
 
+                    BlogName = feedItem.Name;
+
                     try
                     {
                         feed = RetrieveFeed(feedItem.Fields["BlogSource"].Value);
                     }
                     catch (Exception ex)
                     {
-                        //_taskResults.LogActivity(new TaskResultsActivity
-                        //{
-                        //    Message = "There was an error retrieving the XML from " + BlogName + ": " + ex.ToString(),
-                        //    Code = MessageCode.Error
-                        //});
+                        Sitecore.Diagnostics.Log.Error("There was an error retrieving the XML from " + BlogName + ": " + ex.Message,"RssFeedImport");
                     }
 
                     if (feed == null || !feed.Items.Any())
                     {
-                        // todo log that there is nothing in the feed.
-                        //_taskResults.LogActivity(new TaskResultsActivity
-                        //{
-                        //    Message = "Unable to process the " + BlogName + " feed, no valid data was retrieved.",
-                        //    Code = MessageCode.Error
-                        //});
+                        Sitecore.Diagnostics.Log.Error("Unable to process the " + BlogName + " feed, no valid data was retrieved.", "RssFeedImport");
                     }
                     else
                     {
@@ -95,11 +88,7 @@ namespace Feature.WeaponX.Tasks
                         }
                         catch (Exception ex)
                         {
-                            //    _taskResults.LogActivity(new TaskResultsActivity
-                            //    {
-                            //        Message = "There was an error processing the changes within the XML from " + BlogName + ": " + ex.ToString(),
-                            //        Code = MessageCode.Error
-                            //    });
+                            Sitecore.Diagnostics.Log.Error("There was an error retrieving the XML from " + BlogName + ": " + ex.Message, "RssFeedImport");
                         }
                     }
                 }
@@ -122,11 +111,10 @@ namespace Feature.WeaponX.Tasks
 
         private void ProcessDocuments(SyndicationFeed documents)
         {
-            //_taskResults.LogActivity(new TaskResultsActivity
-            //{
-            //    Message = string.Format("Found {0} Documents within the " + BlogName + " Feed", documents.Items.Count()),
-            //    Code = MessageCode.Info
-            //});
+            string message = string.Format("Found {0} Documents within the " + BlogName + " Feed",
+                documents.Items.Count());
+
+            Sitecore.Diagnostics.Log.Error(message, "RssFeedImport");
 
             //start iterating through the feed
             foreach (var doc in documents.Items)
@@ -164,11 +152,9 @@ namespace Feature.WeaponX.Tasks
 
         private void ProcessNewBlogItem(IBlogItem doc)
         {
-            //_taskResults.LogActivity(new TaskResultsActivity()
-            //{
-            //    Message = string.Format("Creating New Item [docId:{0}] - \"{1}\"", doc.__Id, doc.Title),
-            //    Code = MessageCode.Created
-            //});
+            string message = string.Format("Creating New Item [docId:{0}] - \"{1}\"", doc.Id, doc.BlogTitle);
+
+            Sitecore.Diagnostics.Log.Error(message, "RssFeedImport");
 
             IBlogItem blog = null;
 
@@ -230,6 +216,14 @@ namespace Feature.WeaponX.Tasks
                     }
                 }
             }
+            catch (Exception ex)
+            {
+
+                Sitecore.Diagnostics.Log.Error("Error while creating the New Item: " + BlogName + ": " + ex.Message, "RssFeedImport");
+            }
+
+            if (blog != null)
+                PublishSaveItem(blog, monthFolder, false);
         }
         private void PublishSaveItem(IBlogItem blogItem, Item foldertoplace = null, bool isUpdate = false)
         {
