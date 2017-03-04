@@ -36,7 +36,9 @@ namespace Feature.WeaponX.Tasks
             var item = masterDb.GetItem("/sitecore/system/Modules/RSSFeedSettings");
             SyncDatabase = item.Fields["SyncDatabase"].Value;
             //Not working
-            BlogFeedLocId = item.Fields["Blog Root Location"].ID.ToString();
+            Sitecore.Data.Fields.LinkField linkField = item.Fields["BlogLocation"];
+
+            BlogFeedLocId = linkField.TargetID.ToString();
             //if (Feedsettings == null)
             //{
             //    return;
@@ -50,7 +52,7 @@ namespace Feature.WeaponX.Tasks
             CreateFolderForMonth();
 
             var masterDB = Database.GetDatabase("master");
-            SitecoreContext repository = new SitecoreContext(masterDB);
+            //SitecoreContext repository = new SitecoreContext(masterDB);
 
             var feedlist = new RssFeedItems();
 
