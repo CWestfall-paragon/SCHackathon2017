@@ -38,7 +38,7 @@ namespace Feature.WeaponX.Tasks
                 SyncDatabase = Feedsettings.SyncDatabase;
             }
 
-            //create month folder
+            //create month folder may not need this
             CreateFolderForMonth();
 
             var masterDB = Database.GetDatabase("master");
