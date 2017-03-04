@@ -54,17 +54,20 @@ namespace Feature.WeaponX.Tasks
             var masterDB = Database.GetDatabase("master");
             //SitecoreContext repository = new SitecoreContext(masterDB);
 
+            Item[] feeditems = masterDB.SelectItems("/sitecore/system/modules//*[@@templatename='RSSFeedConfiguration']");
+
+            
             var feedlist = new RssFeedItems();
 
             if (feedlist.RssFeeds.Any())
             {
-                foreach (var feedItem in feedlist.RssFeeds)
+                foreach (var feedItem in feeditems)// feedlist.RssFeeds)
                 {
                     SyndicationFeed feed = null;
 
                     try
                     {
-                        feed = RetrieveFeed(feedItem.BlogSource);
+                        feed = RetrieveFeed(feedItem.Fields["BlogSource"].Value);
                     }
                     catch (Exception ex)
                     {
@@ -402,7 +405,8 @@ namespace Feature.WeaponX.Tasks
        
         public class RssFeedItems
         {
-            [SitecoreQuery("/sitecore/system/Modules/*[@@templateid='47EC005D-F89F-4695-8EFA-35585CBF244D']", IsRelative = true)]
+            //[SitecoreQuery("/sitecore/system/Modules//*[@@templateid='47EC005D-F89F-4695-8EFA-35585CBF244D']", IsRelative = true)]
+            [SitecoreQuery("/sitecore/system/modules//*[@@templatename='RSSFeedConfiguration']", IsRelative = true)]
             public virtual IEnumerable<RSSFeedConfiguration> RssFeeds { get; set; }
         }
     }
