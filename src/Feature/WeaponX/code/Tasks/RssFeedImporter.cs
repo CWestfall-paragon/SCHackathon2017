@@ -187,9 +187,8 @@ namespace Feature.WeaponX.Tasks
             var monthFolder = BlogImportHelper.EnsureChildFolder(yearFolder, month.ToString("00"), folderTemplateId);
             using (new Sitecore.SecurityModel.SecurityDisabler())
             {
-                Item blogItem = monthFolder.Add(doc.BlogTitle, new TemplateID(new ID(IBlogItemConstants.TemplateIdString)));
+                var blogItem = monthFolder.Add("test chris", new TemplateID(IBlogItemConstants.TemplateId));
                 var db = Sitecore.Configuration.Factory.GetDatabase("master");
-
                 if (db != null)
                 {
                     if (blogItem != null)
@@ -209,6 +208,7 @@ namespace Feature.WeaponX.Tasks
                         {
                             Sitecore.Diagnostics.Log.Error("Error while creating the New Item: " + BlogName + ": " + ex.Message, "RssFeedImport");
                         }
+                        blogItem.Editing.EndEdit();
                     }
                 }
             }
