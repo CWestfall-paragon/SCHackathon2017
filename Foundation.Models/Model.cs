@@ -77,6 +77,48 @@ namespace Foundation.Models.Models
 	}
 }
 
+namespace Foundation.Models.Models.sitecore.templates.WeaponX.Folders
+{
+
+
+ 	/// <summary>
+	/// IBlog_Feed_Folder Interface
+	/// <para></para>
+	/// <para>Path: /sitecore/templates/WeaponX/Folders/Blog Feed Folder</para>	
+	/// <para>ID: 123fc896-d5af-4f5c-a053-bb875b7de86c</para>	
+	/// </summary>
+	[SitecoreType(TemplateId=IBlog_Feed_FolderConstants.TemplateIdString )] //, Cachable = true
+	public partial interface IBlog_Feed_Folder : IGlassBase 
+	{
+			
+	}
+
+
+	public static partial class IBlog_Feed_FolderConstants{
+
+			public const string TemplateIdString = "123fc896-d5af-4f5c-a053-bb875b7de86c";
+			public static readonly ID TemplateId = new ID(TemplateIdString);
+			public const string TemplateName = "Blog Feed Folder";
+
+			
+
+	}
+
+	
+	/// <summary>
+	/// Blog_Feed_Folder
+	/// <para></para>
+	/// <para>Path: /sitecore/templates/WeaponX/Folders/Blog Feed Folder</para>	
+	/// <para>ID: 123fc896-d5af-4f5c-a053-bb875b7de86c</para>	
+	/// </summary>
+	[SitecoreType(TemplateId=IBlog_Feed_FolderConstants.TemplateIdString)] //, Cachable = true
+	public partial class Blog_Feed_Folder  : GlassBase, IBlog_Feed_Folder 
+	{
+	   
+			
+	}
+
+}
 namespace Foundation.Models.Models.sitecore.templates.WeaponX
 {
 
