@@ -56,10 +56,10 @@ namespace Feature.WeaponX.Tasks
 
             Item[] feeditems = masterDB.SelectItems("/sitecore/system/modules//*[@@templatename='RSSFeedConfiguration']");
 
-            
+
             var feedlist = new RssFeedItems();
 
-            if (feedlist.RssFeeds.Any())
+            if (feeditems.Any())
             {
                 foreach (var feedItem in feeditems)// feedlist.RssFeeds)
                 {
@@ -95,11 +95,11 @@ namespace Feature.WeaponX.Tasks
                         }
                         catch (Exception ex)
                         {
-                        //    _taskResults.LogActivity(new TaskResultsActivity
-                        //    {
-                        //        Message = "There was an error processing the changes within the XML from " + BlogName + ": " + ex.ToString(),
-                        //        Code = MessageCode.Error
-                        //    });
+                            //    _taskResults.LogActivity(new TaskResultsActivity
+                            //    {
+                            //        Message = "There was an error processing the changes within the XML from " + BlogName + ": " + ex.ToString(),
+                            //        Code = MessageCode.Error
+                            //    });
                         }
                     }
                 }
@@ -139,11 +139,11 @@ namespace Feature.WeaponX.Tasks
                 //  bool ismatch = publicationfound != null && publicationfound.BlogId != "";
 
                 bool ismatch = false;
-               // if (!ismatch)
-               // {
-                    bool blogfound = BlogExistsNoIndex(doc.Id);
-                    ismatch = blogfound == true;
-               // }
+                // if (!ismatch)
+                // {
+                bool blogfound = BlogExistsNoIndex(doc.Id);
+                ismatch = blogfound == true;
+                // }
 
                 if (!ismatch)
                 {
@@ -172,8 +172,16 @@ namespace Feature.WeaponX.Tasks
 
             IBlogItem blog = null;
 
+            //Guid folderTemplateId =
+            //    Feedsettings.BlogLocation.TargetId;
+            var masterDb = Database.GetDatabase("master");
+            var item = masterDb.GetItem("/sitecore/system/Modules/RSSFeedSettings");
+            Sitecore.Data.Fields.LinkField linkField = item.Fields["BlogLocation"];
+
+
             Guid folderTemplateId =
-                Feedsettings.BlogLocation.TargetId;
+                IBlog_FolderConstants.TemplateId.Guid;
+
 
             DateTime rsspubdate = new DateTime();
 
@@ -186,38 +194,43 @@ namespace Feature.WeaponX.Tasks
             var month = rsspubdate.Month;
 
             var rootItemId = new ID(new Guid("{D032F66D-DC04-43B9-B782-311FDC17A9AC}"));
-            var masterDb = Database.GetDatabase("master");
             var parentPubItem = masterDb.GetItem(rootItemId);
 
             var yearFolder = BlogImportHelper.EnsureChildFolder(parentPubItem, year.ToString(), folderTemplateId);
 
             var monthFolder = BlogImportHelper.EnsureChildFolder(yearFolder, month.ToString("00"), folderTemplateId);
-
-            try
+            using (new Sitecore.SecurityModel.SecurityDisabler())
             {
-                blog = new BlogItem()
+                Item blogItem = monthFolder.Add(doc.BlogTitle, new TemplateID(new ID(IBlogItemConstants.TemplateIdString)));
+                var db = Sitecore.Configuration.Factory.GetDatabase("master");
+
+                if (db != null)
                 {
-                    //Should be able to add name here
-                    BlogID = doc.BlogID,
-                    BlogTitle = doc.BlogTitle,
-                    BlogAbstract = doc.BlogAbstract,
-                    BlogDisplayDate = doc.BlogDisplayDate,
-                    BlogSourceUrl = doc.BlogSourceUrl
-                };
+                    if (blogItem != null)
+                    {
+                        blogItem.Fields.ReadAll();
+                        blogItem.Editing.BeginEdit();
+                        try
+                        {
+                            //Should be able to add name here
+                            blogItem.Fields["BlogID"].Value = doc.BlogID;
+                            blogItem.Fields["BlogTitle"].Value = doc.BlogTitle;
+                            blogItem.Fields["BlogAbstract"].Value = doc.BlogAbstract;
+                            blogItem.Fields["BlogDisplayDate"].Value = doc.BlogDisplayDate;
+                            blogItem.Fields["BlogSourceUrl"].Value = doc.BlogSourceUrl;
+                        }
+                        catch (Exception ex)
+                        {
+                            //_taskResults.LogActivity(new TaskResultsActivity()
+                            //{
+                            //    Message = "Error while creating the New Item: " + ex.ToString(),
+                            //    Code = MessageCode.Error
+                            //});
+                        }
+                    }
+                }
             }
-            catch (Exception ex)
-            {
-                //_taskResults.LogActivity(new TaskResultsActivity()
-                //{
-                //    Message = "Error while creating the New Item: " + ex.ToString(),
-                //    Code = MessageCode.Error
-                //});
-            }
-
-            if (blog != null)
-                PublishSaveItem(blog, monthFolder, false);
         }
-
         private void PublishSaveItem(IBlogItem blogItem, Item foldertoplace = null, bool isUpdate = false)
         {
             //Not sure why had this before, but we may not have to do the same thing.
@@ -256,10 +269,10 @@ namespace Feature.WeaponX.Tasks
                 //}
                 //else
                 //{
-                    //service.Create<ImportedPublication, PublicationFolderGlass>(service.Cast<PublicationFolderGlass>(foldertoplace), publication);
-                    service.Create<IBlogItem, Blog_Folder>(service.Cast<Blog_Folder>(foldertoplace), blogItem);
-                    //QueryHelper.AddItemToIndex(publication.ToItem());
-               // }
+                //service.Create<ImportedPublication, PublicationFolderGlass>(service.Cast<PublicationFolderGlass>(foldertoplace), publication);
+                service.Create<IBlogItem, Blog_Folder>(service.Cast<Blog_Folder>(foldertoplace), blogItem);
+                //QueryHelper.AddItemToIndex(publication.ToItem());
+                // }
                 //service.Save(pubCoverage);
 
                 // pubCoverage.Save();
@@ -370,7 +383,7 @@ namespace Feature.WeaponX.Tasks
             //{
             //    var masterDb = Database.GetDatabase("master");
             //   // var context = new SitecoreContext(masterDb);
-                
+
             //    var rssFeedSettings = new RSSFeedSettings();
             //    var item = masterDb.GetItem("/sitecore/system/Modules/RSSFeedSettings");
             //    SyncDatabase = item.Fields["SyncDatabase"].Value;
@@ -402,7 +415,7 @@ namespace Feature.WeaponX.Tasks
 
         }
 
-       
+
         public class RssFeedItems
         {
             //[SitecoreQuery("/sitecore/system/Modules//*[@@templateid='47EC005D-F89F-4695-8EFA-35585CBF244D']", IsRelative = true)]
